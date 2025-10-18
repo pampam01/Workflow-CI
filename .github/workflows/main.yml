@@ -1,6 +1,6 @@
 name: Run ML Training
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   train:
@@ -20,30 +20,16 @@ jobs:
           pip install mlflow
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run training (mlflow no-conda or fallback)
+      - name: Run training (direct script inside MLProject)
         run: |
-          # Prioritaskan folder MLProject bila ada (case-sensitive)
+          # Jika folder MLProject ada, jalankan modelling.py di dalamnya
           if [ -d "MLProject" ]; then
-            echo "Found MLProject directory — running mlflow run MLProject --no-conda"
-            mlflow run MLProject --no-conda
+            echo "Running MLProject/modelling.py directly"
+            python MLProject/modelling.py
             exit $?
           fi
 
-          # Bila ada file MLproject di root (MLproject / MLProject file), jalankan mlflow run . --no-conda
-          if [ -f "MLproject" ] || [ -f "MLproject.yaml" ] || [ -f "MLproject.yml" ]; then
-            echo "Found MLproject file in repo root — running mlflow run . --no-conda"
-            mlflow run . --no-conda
-            exit $?
-          fi
-
-          # Jika ada modelling.py di root, jalankan langsung
-          if [ -f "modelling.py" ]; then
-            echo "Found modelling.py in repo root — running python modelling.py"
-            python modelling.py
-            exit $?
-          fi
-
-          # Cari modelling.py di seluruh repo dan jalankan file pertama yang ditemukan
+          # fallback: cari file modelling.py di repo
           script=$(find . -type f -name "modelling.py" | sed -n '1p' || true)
           if [ -n "$script" ]; then
             echo "Found modelling.py at $script — running python $script"
@@ -51,5 +37,5 @@ jobs:
             exit $?
           fi
 
-          echo "ERROR: Tidak menemukan MLProject/MLproject atau modelling.py. Pastikan file ada di repo."
+          echo "ERROR: Tidak menemukan MLProject/modelling.py atau modelling.py di repo."
           exit 1
