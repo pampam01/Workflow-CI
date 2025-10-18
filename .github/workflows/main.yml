@@ -24,10 +24,8 @@ jobs:
         shell: bash -l {0} # Gunakan shell yang diinisialisasi Conda
         run: pip install mlflow
 
-      # Langkah 4: Menjalankan proses training menggunakan MLflow
-      - name: Run MLflow Project
+      # Langkah 4: Menjalankan proses training menggunakan MLflow dari root
+      - name: Run MLflow Project from Root
         shell: bash -l {0} # Gunakan shell yang diinisialisasi Conda
-        # Pindah ke folder MLProject dulu
-        working-directory: ./MLProject 
-        # Jalankan mlflow dari dalam folder MLProject
-        run: mlflow run .
+        # Jalankan mlflow dengan menunjuk ke subfolder MLProject
+        run: mlflow run ./MLProject
