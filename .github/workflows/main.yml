@@ -8,45 +8,28 @@ jobs:
   train-model:
     runs-on: ubuntu-latest
     steps:
+      # Langkah 1: Mengunduh kode dari repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Langkah 2: Menyiapkan Conda Environment
+      # Action ini akan mengurus inisialisasi shell untuk conda
       - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v2
         with:
           auto-activate-base: false
-          python-version: '3.9'  # sesuaikan dengan conda.yaml di MLProject
+          # Pastikan versi python ini sesuai dengan yang ada di conda.yaml Anda
+          python-version: '3.13' 
 
+      # Langkah 3: Menginstall MLflow
       - name: Install MLflow
-        run: |
-          python -m pip install --upgrade pip
-          pip install mlflow
+        run: pip install mlflow
 
-      - name: Debug workspace (show structure)
-        run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "PWD=$(pwd)"
-          echo "Top-level listing:"
-          ls -la || true
-          echo "MLProject listing (if exists):"
-          ls -la MLProject || true
-
-      - name: Run MLflow Project (use conda from setup-miniconda)
-        shell: bash -l {0}
-        run: |
-          # Ensure conda is initialised in the shell (setup-miniconda usually does this,
-          # but source the profile to be safe so `conda` and activation are available).
-          if [ -n "$(command -v conda)" ]; then
-            echo "conda available: $(conda --version)"
-          else
-            echo "conda not found in PATH — aborting"
-            exit 1
-          fi
-
-          # Source conda profile so any conda activation called by mlflow works
-          source "$(conda info --base)/etc/profile.d/conda.sh" || true
-          conda info --base || true
-
-          # Run the MLProject directory (MLProject/MLProject file defines command & conda_env)
-          # mlflow will create & activate conda env as defined by MLProject/conda.yaml
-          mlflow run MLProject
+      # Langkah 4: Menjalankan proses training menggunakan MLflow
+      - name: Run MLflow Project
+        # Menggunakan shell yang sudah diinisialisasi Conda
+        shell: bash
+        # Pindah ke folder MLProject sebelum menjalankan perintah
+        working-directory: ./MLProject 
+        # Jalankan MLflow dari dalam folder MLProject
+        run: mlflow run .
