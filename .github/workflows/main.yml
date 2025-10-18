@@ -20,12 +20,36 @@ jobs:
           pip install mlflow
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run training (mlflow no-conda or direct script)
+      - name: Run training (mlflow no-conda or fallback)
         run: |
-          # Jika repo adalah MLflow Project, jalankan tanpa conda agar tidak mencoba `source activate`
-          if [ -f MLproject ]; then
-            mlflow run . --no-conda
-          else
-            # fallback: langsung jalankan script (pastikan modelling.py ada)
-            python modelling.py
+          # Prioritaskan folder MLProject bila ada (case-sensitive)
+          if [ -d "MLProject" ]; then
+            echo "Found MLProject directory — running mlflow run MLProject --no-conda"
+            mlflow run MLProject --no-conda
+            exit $?
           fi
+
+          # Bila ada file MLproject di root (MLproject / MLProject file), jalankan mlflow run . --no-conda
+          if [ -f "MLproject" ] || [ -f "MLproject.yaml" ] || [ -f "MLproject.yml" ]; then
+            echo "Found MLproject file in repo root — running mlflow run . --no-conda"
+            mlflow run . --no-conda
+            exit $?
+          fi
+
+          # Jika ada modelling.py di root, jalankan langsung
+          if [ -f "modelling.py" ]; then
+            echo "Found modelling.py in repo root — running python modelling.py"
+            python modelling.py
+            exit $?
+          fi
+
+          # Cari modelling.py di seluruh repo dan jalankan file pertama yang ditemukan
+          script=$(find . -type f -name "modelling.py" | sed -n '1p' || true)
+          if [ -n "$script" ]; then
+            echo "Found modelling.py at $script — running python $script"
+            python "$script"
+            exit $?
+          fi
+
+          echo "ERROR: Tidak menemukan MLProject/MLproject atau modelling.py. Pastikan file ada di repo."
+          exit 1
