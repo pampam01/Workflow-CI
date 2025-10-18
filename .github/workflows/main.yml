@@ -6,7 +6,7 @@ jobs:
   train:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -18,24 +18,35 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install mlflow
+          # jika ada requirements di root atau di MLProject, install
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f MLProject/requirements.txt ]; then pip install -r MLProject/requirements.txt; fi
 
-      - name: Run training (direct script inside MLProject)
+      - name: Debug workspace (optional)
         run: |
-          # Jika folder MLProject ada, jalankan modelling.py di dalamnya
-          if [ -d "MLProject" ]; then
-            echo "Running MLProject/modelling.py directly"
-            python MLProject/modelling.py
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "PWD=$(pwd)"
+          echo "Top-level repo listing:"
+          ls -la || true
+          echo "MLProject listing (if exists):"
+          ls -la MLProject || true
+
+      - name: Find and run modelling.py
+        run: |
+          # Prefer MLProject/modelling.py
+          if [ -f "./MLProject/modelling.py" ]; then
+            echo "Running MLProject/modelling.py"
+            python ./MLProject/modelling.py
             exit $?
           fi
 
-          # fallback: cari file modelling.py di repo
-          script=$(find . -type f -name "modelling.py" | sed -n '1p' || true)
+          # Otherwise find first matching modelling.py anywhere in repo
+          script=$(find . -type f -name "modelling.py" -print -quit || true)
           if [ -n "$script" ]; then
-            echo "Found modelling.py at $script — running python $script"
+            echo "Found modelling.py at: $script"
             python "$script"
             exit $?
           fi
 
-          echo "ERROR: Tidak menemukan MLProject/modelling.py atau modelling.py di repo."
+          echo "ERROR: modelling.py not found. Expected at MLProject/modelling.py or elsewhere in repo."
           exit 1
