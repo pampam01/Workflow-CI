@@ -5,7 +5,6 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -13,14 +12,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: "3.9"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install mlflow
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run training script
+      - name: Run training (mlflow no-conda or direct script)
         run: |
-          python modelling.py
+          # Jika repo adalah MLflow Project, jalankan tanpa conda agar tidak mencoba `source activate`
+          if [ -f MLproject ]; then
+            mlflow run . --no-conda
+          else
+            # fallback: langsung jalankan script (pastikan modelling.py ada)
+            python modelling.py
+          fi
