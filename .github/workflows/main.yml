@@ -12,24 +12,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Langkah 2: Menyiapkan Conda Environment
-      # Action ini akan mengurus inisialisasi shell untuk conda
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v2
+      # Langkah 2: Menyiapkan Python (Kita tidak butuh Conda lagi dengan --no-conda)
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          auto-activate-base: false
-          # Pastikan versi python ini sesuai dengan yang ada di conda.yaml Anda
-          python-version: '3.13' 
+          python-version: '3.13' # Sesuaikan jika perlu
 
-      # Langkah 3: Menginstall MLflow
-      - name: Install MLflow
-        run: pip install mlflow
+      # Langkah 3: Menginstall Dependencies (termasuk MLflow)
+      # Pastikan semua library dari conda.yaml ada di sini
+      - name: Install dependencies
+        run: pip install mlflow pandas scikit-learn matplotlib seaborn
 
-      # Langkah 4: Menjalankan proses training menggunakan MLflow
-      - name: Run MLflow Project
-        # Menggunakan shell yang sudah diinisialisasi Conda
-        shell: bash
-        # Pindah ke folder MLProject sebelum menjalankan perintah
+      # Langkah 4: Menjalankan proses training menggunakan MLflow tanpa membuat env baru
+      - name: Run MLflow Project (without Conda env creation)
+        shell: bash 
         working-directory: ./MLProject 
-        # Jalankan MLflow dari dalam folder MLProject
-        run: mlflow run .
+        run: mlflow run . --no-conda
