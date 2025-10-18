@@ -1,52 +1,52 @@
 name: Run ML Training
+
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
-  train:
+  train-model:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: "3.9"
+          auto-activate-base: false
+          python-version: '3.9'  # sesuaikan dengan conda.yaml di MLProject
 
-      - name: Install dependencies
+      - name: Install MLflow
         run: |
           python -m pip install --upgrade pip
           pip install mlflow
-          # jika ada requirements di root atau di MLProject, install
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f MLProject/requirements.txt ]; then pip install -r MLProject/requirements.txt; fi
 
-      - name: Debug workspace (optional)
+      - name: Debug workspace (show structure)
         run: |
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
           echo "PWD=$(pwd)"
-          echo "Top-level repo listing:"
+          echo "Top-level listing:"
           ls -la || true
           echo "MLProject listing (if exists):"
           ls -la MLProject || true
 
-      - name: Find and run modelling.py
+      - name: Run MLflow Project (use conda from setup-miniconda)
+        shell: bash -l {0}
         run: |
-          # Prefer MLProject/modelling.py
-          if [ -f "./MLProject/modelling.py" ]; then
-            echo "Running MLProject/modelling.py"
-            python ./MLProject/modelling.py
-            exit $?
+          # Ensure conda is initialised in the shell (setup-miniconda usually does this,
+          # but source the profile to be safe so `conda` and activation are available).
+          if [ -n "$(command -v conda)" ]; then
+            echo "conda available: $(conda --version)"
+          else
+            echo "conda not found in PATH — aborting"
+            exit 1
           fi
 
-          # Otherwise find first matching modelling.py anywhere in repo
-          script=$(find . -type f -name "modelling.py" -print -quit || true)
-          if [ -n "$script" ]; then
-            echo "Found modelling.py at: $script"
-            python "$script"
-            exit $?
-          fi
+          # Source conda profile so any conda activation called by mlflow works
+          source "$(conda info --base)/etc/profile.d/conda.sh" || true
+          conda info --base || true
 
-          echo "ERROR: modelling.py not found. Expected at MLProject/modelling.py or elsewhere in repo."
-          exit 1
+          # Run the MLProject directory (MLProject/MLProject file defines command & conda_env)
+          # mlflow will create & activate conda env as defined by MLProject/conda.yaml
+          mlflow run MLProject
