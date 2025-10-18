@@ -12,7 +12,7 @@ def main():
 
     # 2. Memuat dataset yang sudah bersih
     print("Memuat dataset...")
-    df = pd.read_csv('MLProject/heart_disease_preprocessing/heart_cleaned_automated.csv')
+    df = pd.read_csv('heart_disease_preprocessing/heart_cleaned_automated.csv')
 
     # 3. Memisahkan fitur (X) dan target (y)
     # 'target' adalah kolom yang ingin kita prediksi
